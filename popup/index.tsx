@@ -1,7 +1,11 @@
+import Switch from "~contents/switch";
+
 import OptionPage from "~options";
 
 function IndexPopup() {
   const divStyle = {
+    height: '100px',           // Height of the div
+    width: '300px',            // Width of the div
     backgroundColor: '#f0f0f0', // Light gray background color
     padding: '20px',            // Padding inside the div
     borderRadius: '8px',        // Rounded corners
@@ -15,7 +19,8 @@ function IndexPopup() {
     <div >
       
      <h1 style={divStyle}>popup msg</h1>
-      <OptionPage />
+      {/* <OptionPage /> */}
+      <Switch />
     </div>
   );
 }
