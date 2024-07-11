@@ -1,4 +1,4 @@
-import Switch from "~contents/switch";
+
 
 import OptionPage from "~options";
 
@@ -20,7 +20,7 @@ function IndexPopup() {
       
      <h1 style={divStyle}>popup msg</h1>
       {/* <OptionPage /> */}
-      <Switch />
+      
     </div>
   );
 }
