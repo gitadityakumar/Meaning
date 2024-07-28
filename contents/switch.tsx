@@ -1,33 +1,50 @@
-import { useState, type CSSProperties } from 'react';
-import type { PlasmoCSConfig, PlasmoGetInlineAnchor } from "plasmo"
-
-
+import { useState, type CSSProperties, useEffect } from 'react';
+import type { PlasmoCSConfig, PlasmoGetInlineAnchor } from "plasmo";
+import { collectVideoData } from '../contents/content';
 
 export const config: PlasmoCSConfig = {
   matches: ["https://www.youtube.com/*"]
-}
+};
 
 export const getInlineAnchor: PlasmoGetInlineAnchor = () =>
-  document.querySelector(`#end`)
+  document.querySelector(`#end`);
 
-export const getShadowHostId = () => "plasmo-inline-example-unique-id"
+export const getShadowHostId = () => "plasmo-inline-example-unique-id";
 
 const Switch = () => {
   const [isChecked, setIsChecked] = useState(false);
 
-  const toggleSwitch = () => {
-    setIsChecked(prev => !prev);
-  };
-   // css of component
+  const sendCollectAndSendVideoDataMessage = () => {
+    const videoData = collectVideoData();
+    console.log("Collected video data:", videoData);
 
-   const switchStyle:CSSProperties  = {
+    chrome.runtime.sendMessage({ action: "collectAndSendVideoData", videoData }, response => {
+      if (response.status === "success") {
+        console.log("Video data sent successfully:", response.data);
+      } else {
+        console.error("Failed to send video data:", response.message);
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (isChecked) {
+      sendCollectAndSendVideoDataMessage();
+    }
+  }, [isChecked]);
+
+  const toggleSwitch = () => {
+    setIsChecked(prevState => !prevState);
+  };
+
+  const switchStyle: CSSProperties = {
     position: 'relative',
     display: 'inline-block',
     width: '50px',
     height: '34px'
   };
 
-  const sliderStyle:CSSProperties  = {
+  const sliderStyle: CSSProperties = {
     position: 'absolute',
     cursor: 'pointer',
     top: '0',
@@ -40,7 +57,7 @@ const Switch = () => {
     boxShadow: '0 0 10px rgba(0, 0, 0, 0.5)'
   };
 
-  const circleStyle:CSSProperties  = {
+  const circleStyle: CSSProperties = {
     position: 'absolute',
     height: '26px',
     width: '26px',
