@@ -1,6 +1,10 @@
-import { useState, type CSSProperties, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { PlasmoCSConfig, PlasmoGetInlineAnchor } from "plasmo";
-import { collectVideoData } from '../contents/content';
+import { collectVideoData, setCollectionEnabled } from './content'; 
+import type { VideoData } from './content';
+import { getCurrentPlaytime } from './collection';
+import { sendMessage } from './utils';
+
 
 export const config: PlasmoCSConfig = {
   matches: ["https://www.youtube.com/*"]
@@ -13,38 +17,91 @@ export const getShadowHostId = () => "plasmo-inline-example-unique-id";
 
 const Switch = () => {
   const [isChecked, setIsChecked] = useState(false);
+  const [currentVideoData, setCurrentVideoData] = useState<VideoData | null>(null);
 
-  const sendCollectAndSendVideoDataMessage = () => {
-    const videoData = collectVideoData();
-    console.log("Collected video data:", videoData);
-
-    chrome.runtime.sendMessage({ action: "collectAndSendVideoData", videoData }, response => {
-      if (response.status === "success") {
-        console.log("Video data sent successfully:", response.data);
-      } else {
-        console.error("Failed to send video data:", response.message);
-      }
+const sendVideoData = async (videoData: VideoData, isFullData: boolean) => {
+  try {
+    const response = await sendMessage<{ status: string; data?: VideoData; message?: string }>({
+      action: isFullData ? "collectAndSendVideoData" : "updateVideoPlaytime",
+      videoData
     });
-  };
-
-  useEffect(() => {
-    if (isChecked) {
-      sendCollectAndSendVideoDataMessage();
+    if (response.status === "success") {
+      console.log(isFullData ? "Video data sent successfully:" : "Playtime updated successfully:", response.data);
+    } else {
+      console.error(isFullData ? "Failed to send video data:" : "Failed to update playtime:", response.message);
     }
-  }, [isChecked]);
+  } catch (error) {
+    console.error("Error sending video data:", error);
+  }
+};
 
-  const toggleSwitch = () => {
+  // const sendCollectAndSendVideoDataMessage = async (videoData: VideoData) => {
+  //   try {
+  //     const response = await sendMessage<{ status: string; data?: VideoData; message?: string }>({
+  //       action: "collectAndSendVideoData",
+  //       videoData
+  //     });
+  //     if (response.status === "success") {
+  //       console.log("Video data sent successfully:", response.data);
+  //     } else {
+  //       console.error("Failed to send video data:", response.message);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error sending video data:", error);
+  //   }
+  // };
+
+  const handleSwitchToggle = () => {
     setIsChecked(prevState => !prevState);
   };
 
-  const switchStyle: CSSProperties = {
+  useEffect(() => {
+    setCollectionEnabled(isChecked);
+    let intervalId: number | null = null;
+  
+    const checkAndSendVideoData = () => {
+      if (window.location.hostname === 'www.youtube.com') {
+        const newVideoData = collectVideoData();
+        
+        if (!currentVideoData || newVideoData.url !== currentVideoData.url) {
+          // New video detected, send full data
+          setCurrentVideoData(newVideoData);
+          sendVideoData(newVideoData, true);
+        } else {
+          // Same video, update playtime
+          const updatedPlaytime = getCurrentPlaytime();
+          if (updatedPlaytime !== null && updatedPlaytime !== currentVideoData.playtime) {
+            const updatedVideoData = { ...currentVideoData, playtime: updatedPlaytime };
+            setCurrentVideoData(updatedVideoData);
+            sendVideoData(updatedVideoData, false);
+          }
+        }
+      }
+    };
+  
+    if (isChecked) {
+      // Initial check
+      checkAndSendVideoData();
+      
+      // Set up interval for periodic checks
+      intervalId = window.setInterval(checkAndSendVideoData, 5000); // Check every 5 seconds
+    }
+  
+    return () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [isChecked, currentVideoData]);
+
+  const switchStyle: React.CSSProperties = {
     position: 'relative',
     display: 'inline-block',
     width: '50px',
     height: '34px'
   };
 
-  const sliderStyle: CSSProperties = {
+  const sliderStyle: React.CSSProperties = {
     position: 'absolute',
     cursor: 'pointer',
     top: '0',
@@ -57,7 +114,7 @@ const Switch = () => {
     boxShadow: '0 0 10px rgba(0, 0, 0, 0.5)'
   };
 
-  const circleStyle: CSSProperties = {
+  const circleStyle: React.CSSProperties = {
     position: 'absolute',
     height: '26px',
     width: '26px',
@@ -71,7 +128,7 @@ const Switch = () => {
 
   return (
     <label style={switchStyle}>
-      <input type="checkbox" checked={isChecked} onChange={toggleSwitch} style={{ opacity: 0, width: 0, height: 0 }} />
+      <input type="checkbox" checked={isChecked} onChange={handleSwitchToggle} style={{ opacity: 0, width: 0, height: 0 }} />
       <span style={sliderStyle}>
         <span style={circleStyle}></span>
       </span>

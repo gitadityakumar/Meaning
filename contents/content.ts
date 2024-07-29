@@ -1,70 +1,113 @@
-// Function to get the current YouTube video URL
-export function getCurrentVideoUrl(): string {
-  return window.location.href;
+import { debounce } from './utils';
+import { STORAGE_KEY, DEBOUNCE_DELAY } from './config';
+import { getCurrentVideoUrl, getCurrentThumbnailUrl, getCurrentVideoTitle, getChannelName, getCurrentVideoDuration, getCurrentPlaytime } from './collection'
+
+
+
+ export interface VideoData {
+  url: string;
+  thumbnailUrl: string | null;
+  title: string | null;
+  channelName: string | null;
+  duration: string | null;
+  playtime: number | null;
 }
 
-// Function to get the current playtime
-export function getCurrentPlaytime(): number | null {
-  const video = document.querySelector('video');
-  return video ? video.currentTime : null;
-}
+let isCollectionEnabled = false;
 
-// Function to get the current channel name
-export function getChannelName(): string | null {
-  const ownerDiv = document.getElementById('owner');
-  if (!ownerDiv) {
-      console.error("Owner div not found");
-      return null;
-  }
-
-  const anchorTag = ownerDiv.querySelector('a[href*="/@"]');
-  if (!anchorTag) {
-      console.error("Channel anchor tag not found");
-      return null;
-  }
-
-  const href = anchorTag.getAttribute('href') ?? '';
-  const channelName = href.split('/@')[1] || '';
-  
-  return channelName || null;
-}
-
-// Function to get the current video's thumbnail URL
-export function getCurrentThumbnailUrl(): string | null {
-  const videoUrl = getCurrentVideoUrl();
-  const videoId = new URLSearchParams(new URL(videoUrl).search).get('v');
-  if (videoId) {
-    return' https://img.youtube.com/vi/${videoId}/hqdefault.jpg';
-  } else {
-    console.error("Video ID not found");
-    return null;
-  }
-}
-
-//fucntion to get current video's title 
-export function getCurrentVideoTitle(): string | null {
-  const titleElement = document.querySelector('#title h1 yt-formatted-string');
-  return titleElement ? titleElement.textContent :  'Title not found';
-}
-
-//function to get current video's duration 
-export function getCurrentVideoDuration(): string | null {
-  const durationElement = document.querySelector('.ytp-time-duration');
-  return durationElement ? durationElement.textContent : 'Duration not found';
+export function setCollectionEnabled(enabled: boolean) {
+  isCollectionEnabled = enabled;
 }
 
 // Function to collect video data
-export function collectVideoData() {
-  return {
+export function collectVideoData(): VideoData {
+  try {
+    return {
       url: getCurrentVideoUrl(),
-      thumbnailUrl: getCurrentThumbnailUrl(), 
+      thumbnailUrl: getCurrentThumbnailUrl(),
       title: getCurrentVideoTitle(),
       channelName: getChannelName(),
       duration: getCurrentVideoDuration(),
       playtime: getCurrentPlaytime()
-      
-  };
+    };
+  } catch (error) {
+    console.error('Error collecting video data:', error);
+    return {} as VideoData;
+  }
 }
 
+// Function to set up the MutationObserver
+export function setupMutationObserver(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const video = document.querySelector('video');
+    
+    if (video) {
+      const handleMutation = debounce(() => {
+        console.log('Video source changed:', video.src);
+        observer.disconnect();
+        resolve(true);
+      }, DEBOUNCE_DELAY);
 
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+            handleMutation();
+          }
+        });
+      });
 
+      observer.observe(video, { attributes: true });
+    } else {
+      console.error('Video element not found');
+      resolve(false);
+    }
+  });
+}
+
+// Function to save data locally
+function saveVideoDataLocally(videoData: VideoData): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(videoData));
+  } catch (error) {
+    console.error('Error saving video data locally:', error);
+  }
+}
+
+// Function to get data from local storage
+function getVideoDataFromLocalStorage(): VideoData | null {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('Error retrieving video data from local storage:', error);
+    return null;
+  }
+}
+
+// Function to handle page visibility change
+function handleVisibilityChange(): void {
+  if (document.visibilityState === 'hidden' && isCollectionEnabled) {
+    const videoData = collectVideoData();
+    console.log('Page hidden, saving video data:', videoData);
+    saveVideoDataLocally(videoData);
+    chrome.runtime.sendMessage({ action: "collectAndSendVideoData", videoData });
+  }
+}
+
+// Check local storage on page load and send data if available
+function checkAndSendLocalData(): void {
+  if (isCollectionEnabled) {
+    const savedData = getVideoDataFromLocalStorage();
+    if (savedData) {
+      console.log('Found saved video data, sending to backend:', savedData);
+      chrome.runtime.sendMessage({ action: "collectAndSendVideoData", videoData: savedData });
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+}
+
+document.addEventListener('visibilitychange', handleVisibilityChange);
+window.addEventListener('load', checkAndSendLocalData);
+
+// Initialize the MutationObserver
+setupMutationObserver();
