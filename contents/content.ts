@@ -1,5 +1,3 @@
-// content.ts
-
 // Function to get the current YouTube video URL
 export function getCurrentVideoUrl(): string {
   return window.location.href;
@@ -31,13 +29,42 @@ export function getChannelName(): string | null {
   return channelName || null;
 }
 
+// Function to get the current video's thumbnail URL
+export function getCurrentThumbnailUrl(): string | null {
+  const videoUrl = getCurrentVideoUrl();
+  const videoId = new URLSearchParams(new URL(videoUrl).search).get('v');
+  if (videoId) {
+    return' https://img.youtube.com/vi/${videoId}/hqdefault.jpg';
+  } else {
+    console.error("Video ID not found");
+    return null;
+  }
+}
+
+//fucntion to get current video's title 
+export function getCurrentVideoTitle(): string | null {
+  const titleElement = document.querySelector('#title h1 yt-formatted-string');
+  return titleElement ? titleElement.textContent :  'Title not found';
+}
+
+//function to get current video's duration 
+export function getCurrentVideoDuration(): string | null {
+  const durationElement = document.querySelector('.ytp-time-duration');
+  return durationElement ? durationElement.textContent : 'Duration not found';
+}
+
 // Function to collect video data
 export function collectVideoData() {
   return {
       url: getCurrentVideoUrl(),
-      playtime: getCurrentPlaytime(),
-      channelName: getChannelName()
+      thumbnailUrl: getCurrentThumbnailUrl(), 
+      title: getCurrentVideoTitle(),
+      channelName: getChannelName(),
+      duration: getCurrentVideoDuration(),
+      playtime: getCurrentPlaytime()
+      
   };
 }
+
 
 
