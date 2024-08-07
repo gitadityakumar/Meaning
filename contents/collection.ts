@@ -52,3 +52,16 @@ export function getCurrentVideoDuration(): string | null {
   const durationElement = document.querySelector('.ytp-time-duration');
   return durationElement ? durationElement.textContent : 'Duration not found';
 }
+
+// New function to get the channel avatar image link
+// Function to get the channel avatar image link
+export function getChannelAvatarUrl(): string | null {
+  const avatarImg = document.querySelector('#owner img#img');
+  if (avatarImg instanceof HTMLImageElement) {
+    return avatarImg.src;
+  } else {
+    console.error("Channel avatar image not found");
+    return null;
+  }
+}
+

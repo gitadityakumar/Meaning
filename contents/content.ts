@@ -1,17 +1,25 @@
 import { debounce } from './utils';
 import { STORAGE_KEY, DEBOUNCE_DELAY } from './config';
-import { getCurrentVideoUrl, getCurrentThumbnailUrl, getCurrentVideoTitle, getChannelName, getCurrentVideoDuration, getCurrentPlaytime } from './collection'
-
+import { getCurrentVideoUrl, getCurrentThumbnailUrl, getCurrentVideoTitle, getChannelName, getCurrentVideoDuration, getCurrentPlaytime,getChannelAvatarUrl } from './collection'
+// import { v4 as uuidv4 } from 'uuid';
 
 
  export interface VideoData {
+  // id:string;
   url: string;
   thumbnailUrl: string | null;
+  channelAvatar:string | null;
   title: string | null;
   channelName: string | null;
   duration: string | null;
   playtime: number | null;
 }
+
+// function to generate id 
+//  function generateId(): string {
+//   return uuidv4();
+// }
+
 
 let isCollectionEnabled = false;
 
@@ -23,8 +31,10 @@ export function setCollectionEnabled(enabled: boolean) {
 export function collectVideoData(): VideoData {
   try {
     return {
+      // id: generateId(),
       url: getCurrentVideoUrl(),
       thumbnailUrl: getCurrentThumbnailUrl(),
+      channelAvatar:getChannelAvatarUrl(),
       title: getCurrentVideoTitle(),
       channelName: getChannelName(),
       duration: getCurrentVideoDuration(),
