@@ -5,7 +5,8 @@ import { getCurrentVideoUrl, getCurrentThumbnailUrl, getCurrentVideoTitle, getCh
 
 
  export interface VideoData {
-  // id:string;
+  
+  
   url: string;
   thumbnailUrl: string | null;
   channelAvatar:string | null;
@@ -13,6 +14,7 @@ import { getCurrentVideoUrl, getCurrentThumbnailUrl, getCurrentVideoTitle, getCh
   channelName: string | null;
   duration: string | null;
   playtime: number | null;
+  processed: boolean;
 }
 
 // function to generate id 
@@ -32,13 +34,15 @@ export function collectVideoData(): VideoData {
   try {
     return {
       // id: generateId(),
+
       url: getCurrentVideoUrl(),
       thumbnailUrl: getCurrentThumbnailUrl(),
       channelAvatar:getChannelAvatarUrl(),
       title: getCurrentVideoTitle(),
       channelName: getChannelName(),
       duration: getCurrentVideoDuration(),
-      playtime: getCurrentPlaytime()
+      playtime: getCurrentPlaytime(),
+      processed: false,
     };
   } catch (error) {
     console.error('Error collecting video data:', error);

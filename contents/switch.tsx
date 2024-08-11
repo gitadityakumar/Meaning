@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import type { PlasmoCSConfig, PlasmoGetInlineAnchor } from "plasmo";
-import { collectVideoData, setCollectionEnabled } from './content'; 
+import { collectVideoData, setCollectionEnabled } from './content';
 import type { VideoData } from './content';
 import { getCurrentPlaytime } from './collection';
 import { sendMessage } from './utils';
+import { Storage } from "@plasmohq/storage"
 
+const storage = new Storage();
 
 export const config: PlasmoCSConfig = {
   matches: ["https://www.youtube.com/*"]
@@ -18,78 +20,101 @@ export const getShadowHostId = () => "plasmo-inline-example-unique-id";
 const Switch = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [currentVideoData, setCurrentVideoData] = useState<VideoData | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-const sendVideoData = async (videoData: VideoData, isFullData: boolean) => {
-  try {
-    const response = await sendMessage<{ status: string; data?: VideoData; message?: string }>({
-      action: isFullData ? "collectAndSendVideoData" : "updateVideoPlaytime",
-      videoData
-    });
-    if (response.status === "success") {
-      console.log(isFullData ? "Video data sent successfully:" : "Playtime updated successfully:", response.data);
+  const handleSwitchToggle = async () => {
+    if (!isChecked) {
+      try {
+        const response = await chrome.runtime.sendMessage({ action: "authenticate" });
+        if (response.userId) {
+          setUserId(response.userId);
+          await storage.set("userId", response.userId);  // Persist the userId
+          setIsChecked(true);
+          setCollectionEnabled(true);
+          console.log('Authentication successful. User ID:', response.userId);
+        } else {
+          console.log('Authentication failed. User not logged in.');
+          // For development, we'll set isChecked to true anyway
+          setIsChecked(true);
+          setCollectionEnabled(true);
+        }
+      } catch (error) {
+        console.error('Authentication error:', error);
+        // For development, we'll set isChecked to true even if there's an error
+        setIsChecked(true);
+        setCollectionEnabled(true);
+      }
     } else {
-      console.error(isFullData ? "Failed to send video data:" : "Failed to update playtime:", response.message);
+      setIsChecked(false);
+      setCollectionEnabled(false);
+      setUserId(null);
+      await storage.remove("userId");  // Clear the persisted userId
+      console.log('Data collection disabled.');
     }
-  } catch (error) {
-    console.error("Error sending video data:", error);
-  }
-};
-
-  // const sendCollectAndSendVideoDataMessage = async (videoData: VideoData) => {
-  //   try {
-  //     const response = await sendMessage<{ status: string; data?: VideoData; message?: string }>({
-  //       action: "collectAndSendVideoData",
-  //       videoData
-  //     });
-  //     if (response.status === "success") {
-  //       console.log("Video data sent successfully:", response.data);
-  //     } else {
-  //       console.error("Failed to send video data:", response.message);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error sending video data:", error);
-  //   }
-  // };
-
-  const handleSwitchToggle = () => {
-    setIsChecked(prevState => !prevState);
   };
 
+  const sendVideoData = async (videoData: VideoData, isFullData: boolean) => {
+    try {
+      const response = await sendMessage<{ status: string; data?: VideoData; message?: string }>({
+        action: isFullData ? "collectAndSendVideoData" : "updateVideoPlaytime",
+        videoData,
+        userId
+      });
+      console.log('Raw response:', response); // Add this line
+      if (response.status === "success") {
+        console.log(isFullData ? "Video data sent successfully:" : "Playtime updated successfully:", response.data);
+      } else {
+        console.error(isFullData ? "Failed to send video data:" : "Failed to update playtime:", response.message);
+      }
+    } catch (error) {
+      console.error("Error sending video data:", error);
+    }
+  };
+
+  // useEffect for storing/retrieving userId and setting up interval checks
   useEffect(() => {
+    const initializeUserId = async () => {
+      const storedUserId = await storage.get("userId");
+      if (storedUserId) {
+        setUserId(storedUserId as string);  // Retrieve and set the persisted userId
+      }
+    };
+
+    initializeUserId();  // Initialize the userId from storage
+
     setCollectionEnabled(isChecked);
     let intervalId: number | null = null;
-  
+
     const checkAndSendVideoData = () => {
       if (window.location.hostname === 'www.youtube.com') {
         const newVideoData = collectVideoData();
         
         if (!currentVideoData || newVideoData.url !== currentVideoData.url) {
-          // New video detected, send full data
           setCurrentVideoData(newVideoData);
           sendVideoData(newVideoData, true);
+          console.log('New video detected:', newVideoData.url);
         } else {
-          // Same video, update playtime
           const updatedPlaytime = getCurrentPlaytime();
           if (updatedPlaytime !== null && updatedPlaytime !== currentVideoData.playtime) {
             const updatedVideoData = { ...currentVideoData, playtime: updatedPlaytime };
             setCurrentVideoData(updatedVideoData);
             sendVideoData(updatedVideoData, false);
+            console.log('Playtime updated:', updatedPlaytime);
           }
         }
       }
     };
-  
+
     if (isChecked) {
-      // Initial check
+      console.log('Data collection enabled. Starting interval checks.');
       checkAndSendVideoData();
-      
-      // Set up interval for periodic checks
-      intervalId = window.setInterval(checkAndSendVideoData, 5000); // Check every 5 seconds
+      intervalId = window.setInterval(checkAndSendVideoData, 5000);
     }
-  
+
     return () => {
       if (intervalId) {
         window.clearInterval(intervalId);
+        console.log('Interval checks stopped.');
       }
     };
   }, [isChecked, currentVideoData]);
@@ -128,7 +153,12 @@ const sendVideoData = async (videoData: VideoData, isFullData: boolean) => {
 
   return (
     <label style={switchStyle}>
-      <input type="checkbox" checked={isChecked} onChange={handleSwitchToggle} style={{ opacity: 0, width: 0, height: 0 }} />
+      <input 
+        type="checkbox" 
+        checked={isChecked} 
+        onChange={handleSwitchToggle} 
+        style={{ opacity: 0, width: 0, height: 0 }} 
+      />
       <span style={sliderStyle}>
         <span style={circleStyle}></span>
       </span>
