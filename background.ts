@@ -1,3 +1,5 @@
+let storedUserId: string | null = null;
+
 async function authenticateUser(): Promise<string | null> {
   try {
     const response = await fetch('http://localhost:3002/api/auth', {
@@ -5,15 +7,14 @@ async function authenticateUser(): Promise<string | null> {
       headers: {
         'Content-Type': 'application/json'
       },
-      // We're not sending a key, so the body can be empty
-      body: JSON.stringify({"key":"ADI"})
+      body: JSON.stringify({ "key": "ADI" })
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       console.log('Authentication response:', data);
       if (data.userData) {
-        // The userData field contains the user ID string
+        storedUserId = data.userData;
         return data.userData;
       } else {
         console.log('No user data in response');
@@ -29,19 +30,19 @@ async function authenticateUser(): Promise<string | null> {
   }
 }
 
-async function sendVideoDataToBackend(videoData: any, userId: string) {
+async function sendVideoDataToBackend(videoData: any, userId?: string) {
   try {
     const response = await fetch('http://localhost:3002/url', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ ...videoData, userId })
+      body: JSON.stringify({ ...videoData, userId: userId || storedUserId || 'anonymous' })
     });
-    const rawText = await response.text(); // Get the raw response text
-    console.log('Raw response text:', rawText); // Log the raw response
+    const rawText = await response.text();
+    console.log('Raw response text:', rawText);
     try {
-      const data = JSON.parse(rawText); // Try to parse the JSON
+      const data = JSON.parse(rawText);
       console.log('Video data sent successfully:', data);
       return data;
     } catch (jsonError) {
@@ -59,18 +60,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     authenticateUser().then(userId => {
       sendResponse({ userId: userId });
     });
-    return true; // Indicates that the response is sent asynchronously
+    return true;
   }
 
   if (message.action === "collectAndSendVideoData") {
     const videoData = message.videoData;
-    const userId = message.userId;
+    const userId = message.userId || storedUserId;
     
-    if (!userId) {
-      console.log('Collecting data without user ID');
-    }
-
-    sendVideoDataToBackend(videoData, userId || 'anonymous')
+    sendVideoDataToBackend(videoData, userId)
       .then((data) => sendResponse({ status: "success", data: data }))
       .catch((error) => sendResponse({ status: "error", message: error.message }));
 

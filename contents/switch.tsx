@@ -54,13 +54,17 @@ const Switch = () => {
   };
 
   const sendVideoData = async (videoData: VideoData, isFullData: boolean) => {
+    if (!userId) {
+      console.error("User ID is missing. Cannot send video data.");
+      return;
+    }
     try {
       const response = await sendMessage<{ status: string; data?: VideoData; message?: string }>({
         action: isFullData ? "collectAndSendVideoData" : "updateVideoPlaytime",
         videoData,
         userId
       });
-      console.log('Raw response:', response); // Add this line
+      console.log('Raw response:', response);
       if (response.status === "success") {
         console.log(isFullData ? "Video data sent successfully:" : "Playtime updated successfully:", response.data);
       } else {
@@ -71,7 +75,6 @@ const Switch = () => {
     }
   };
 
-  // useEffect for storing/retrieving userId and setting up interval checks
   useEffect(() => {
     const initializeUserId = async () => {
       const storedUserId = await storage.get("userId");
@@ -88,7 +91,7 @@ const Switch = () => {
     const checkAndSendVideoData = () => {
       if (window.location.hostname === 'www.youtube.com') {
         const newVideoData = collectVideoData();
-        
+
         if (!currentVideoData || newVideoData.url !== currentVideoData.url) {
           setCurrentVideoData(newVideoData);
           sendVideoData(newVideoData, true);
@@ -105,7 +108,7 @@ const Switch = () => {
       }
     };
 
-    if (isChecked) {
+    if (isChecked && userId) {
       console.log('Data collection enabled. Starting interval checks.');
       checkAndSendVideoData();
       intervalId = window.setInterval(checkAndSendVideoData, 5000);
@@ -117,7 +120,7 @@ const Switch = () => {
         console.log('Interval checks stopped.');
       }
     };
-  }, [isChecked, currentVideoData]);
+  }, [isChecked, currentVideoData, userId]);
 
   const switchStyle: React.CSSProperties = {
     position: 'relative',
