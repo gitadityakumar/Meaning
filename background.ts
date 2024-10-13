@@ -12,20 +12,20 @@ async function authenticateUser(): Promise<string | null> {
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Authentication response:', data);
+      console.log('bg.ts***Authentication response:', data);
       if (data.userData) {
         storedUserId = data.userData;
         return data.userData;
       } else {
-        console.log('No user data in response');
+        console.log('bg.ts**No user data in response');
         return null;
       }
     } else {
-      console.log('Authentication failed:', response.status);
+      console.log('bg.ts**Authentication failed:', response.status);
       return null;
     }
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('bg.ts**Authentication error:', error);
     return null;
   }
 }
