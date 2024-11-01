@@ -1,8 +1,9 @@
 let storedUserId: string | null = null;
+import { API_ENDPOINT ,AUTH_ENDPOINT} from "~contents/config";
 
 async function authenticateUser(): Promise<string | null> {
   try {
-    const response = await fetch('http://localhost:3002/api/auth', {
+    const response = await fetch(AUTH_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -32,7 +33,7 @@ async function authenticateUser(): Promise<string | null> {
 
 async function sendVideoDataToBackend(videoData: any, userId?: string) {
   try {
-    const response = await fetch('http://localhost:3002/url', {
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

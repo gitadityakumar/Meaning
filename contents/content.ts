@@ -2,8 +2,7 @@ import { debounce } from './utils';
 import { STORAGE_KEY, DEBOUNCE_DELAY } from './config';
 import { getCurrentVideoUrl, getCurrentThumbnailUrl, getCurrentVideoTitle, getChannelName, getCurrentVideoDuration, getCurrentPlaytime,getChannelAvatarUrl } from './collection'
 
-
- export interface VideoData {
+export interface VideoData {
   url: string;
   thumbnailUrl: string | null;
   channelAvatar:string | null;
@@ -37,7 +36,8 @@ export function collectVideoData(): VideoData {
       processed: false,
     };
   } catch (error) {
-    console.error('Error collecting video data:', error);
+    console.log(error);
+    // console.error('Error collecting video data:', error);
     return {} as VideoData;
   }
 }
@@ -64,7 +64,7 @@ export function setupMutationObserver(): Promise<boolean> {
 
       observer.observe(video, { attributes: true });
     } else {
-      console.error('Video element not found');
+      console.log('Video element not found');
       resolve(false);
     }
   });
