@@ -31,12 +31,12 @@ const Switch = () => {
           await storage.set("userId", response.userId);  // Persist the userId
           setIsChecked(true);
           setCollectionEnabled(true);
-          console.log('Authentication successful. User ID:', response.userId);
+          // console.log('Authentication successful. User ID:', response.userId);
         } else {
-          console.log('Authentication failed. User not logged in.');
+          // console.log('Authentication failed. User not logged in.');
           // For development, we'll set isChecked to true anyway
-          setIsChecked(true);
-          setCollectionEnabled(true);
+          setIsChecked(false);
+          setCollectionEnabled(false);
         }
       } catch (error) {
         console.error('Authentication error:', error);
@@ -49,7 +49,7 @@ const Switch = () => {
       setCollectionEnabled(false);
       setUserId(null);
       await storage.remove("userId");  // Clear the persisted userId
-      console.log('Data collection disabled.');
+      // console.log('Data collection disabled.');
     }
   };
 
@@ -64,9 +64,9 @@ const Switch = () => {
         videoData,
         userId
       });
-      console.log('Raw response:', response);
+      // console.log('Raw response:', response);
       if (response.status === "success") {
-        console.log(isFullData ? "Video data sent successfully:" : "Playtime updated successfully:", response.data);
+        // console.log(isFullData ? "Video data sent successfully:" : "Playtime updated successfully:", response.data);
       } else {
         console.error(isFullData ? "Failed to send video data:" : "Failed to update playtime:", response.message);
       }
@@ -95,21 +95,21 @@ const Switch = () => {
         if (!currentVideoData || newVideoData.url !== currentVideoData.url) {
           setCurrentVideoData(newVideoData);
           sendVideoData(newVideoData, true);
-          console.log('New video detected:', newVideoData.url);
+          // console.log('New video detected:', newVideoData.url);
         } else {
           const updatedPlaytime = getCurrentPlaytime();
           if (updatedPlaytime !== null && updatedPlaytime !== currentVideoData.playtime) {
             const updatedVideoData = { ...currentVideoData, playtime: updatedPlaytime };
             setCurrentVideoData(updatedVideoData);
             sendVideoData(updatedVideoData, false);
-            console.log('Playtime updated:', updatedPlaytime);
+            // console.log('Playtime updated:', updatedPlaytime);
           }
         }
       }
     };
 
     if (isChecked && userId) {
-      console.log('Data collection enabled. Starting interval checks.');
+      // console.log('Data collection enabled. Starting interval checks.');
       checkAndSendVideoData();
       intervalId = window.setInterval(checkAndSendVideoData, 5000);
     }
@@ -117,7 +117,7 @@ const Switch = () => {
     return () => {
       if (intervalId) {
         window.clearInterval(intervalId);
-        console.log('Interval checks stopped.');
+        // console.log('Interval checks stopped.');
       }
     };
   }, [isChecked, currentVideoData, userId]);

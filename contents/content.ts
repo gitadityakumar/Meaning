@@ -36,7 +36,7 @@ export function collectVideoData(): VideoData {
       processed: false,
     };
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     // console.error('Error collecting video data:', error);
     return {} as VideoData;
   }
@@ -49,7 +49,7 @@ export function setupMutationObserver(): Promise<boolean> {
     
     if (video) {
       const handleMutation = debounce(() => {
-        console.log('Video source changed:', video.src);
+        // console.log('Video source changed:', video.src);
         observer.disconnect();
         resolve(true);
       }, DEBOUNCE_DELAY);
@@ -64,7 +64,7 @@ export function setupMutationObserver(): Promise<boolean> {
 
       observer.observe(video, { attributes: true });
     } else {
-      console.log('Video element not found');
+      // console.log('Video element not found');
       resolve(false);
     }
   });
@@ -94,7 +94,7 @@ function getVideoDataFromLocalStorage(): VideoData | null {
 function handleVisibilityChange(): void {
   if (document.visibilityState === 'hidden' && isCollectionEnabled) {
     const videoData = collectVideoData();
-    console.log('Page hidden, saving video data:', videoData);
+    // console.log('Page hidden, saving video data:', videoData);
     saveVideoDataLocally(videoData);
     chrome.runtime.sendMessage({ action: "collectAndSendVideoData", videoData });
   }
@@ -105,7 +105,7 @@ function checkAndSendLocalData(): void {
   if (isCollectionEnabled) {
     const savedData = getVideoDataFromLocalStorage();
     if (savedData) {
-      console.log('Found saved video data, sending to backend:', savedData);
+      // console.log('Found saved video data, sending to backend:', savedData);
       chrome.runtime.sendMessage({ action: "collectAndSendVideoData", videoData: savedData });
       localStorage.removeItem(STORAGE_KEY);
     }
