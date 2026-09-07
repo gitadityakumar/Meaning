@@ -31,5 +31,10 @@
     "host_permissions": [
       "https://*/*"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "browserslist": "^4.28.9"
+    }
   }
 }
