@@ -34,7 +34,27 @@
   },
   "pnpm": {
     "overrides": {
-      "browserslist": "^4.28.9"
+      "@babel/core": "^7.29.7",
+      "base-x": "^3.0.11",
+      "brace-expansion": "^2.1.4",
+      "browserslist": "^4.28.9",
+      "content-security-policy-parser": "^0.6.0",
+      "cross-spawn": "^7.0.6",
+      "fflate": "^0.8.3",
+      "glob": "^10.4.5",
+      "immutable": "^4.3.9",
+      "js-yaml": "^4.3.1",
+      "lodash": "^4.18.1",
+      "minimatch": "^9.0.7",
+      "msgpackr": "^1.10.1",
+      "nanoid": "^3.3.18",
+      "picomatch": "^2.3.2",
+      "postcss": "^8.5.28",
+      "rollup": "^3.30.0",
+      "sharp": "^0.35.4",
+      "svgo": "^2.8.3",
+      "tmp": "^0.2.7",
+      "yaml": "^2.9.0"
     }
   }
 }
